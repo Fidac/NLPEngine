@@ -316,4 +316,4 @@ if __name__ == '__main__':
     app = Flask("NlpApp")
     api = Api(app)
     api.add_resource(NLP, '/nlp')  # add endpoints
-    app.run()  # run our Flask app
+    app.run(host='0.0.0.0', port='5000', debug=True)  # run our Flask app
