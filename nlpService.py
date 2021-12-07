@@ -247,7 +247,7 @@ class DocumentRanker:
 #         probs = [t.tolist() for t in probs]
 #         probs.sort(reverse=True)
         #print("Probs: ", probs)
-        print(doc_scores)
+        # print(doc_scores)
         
 #         if number_of_documents > len(doc_scores):
 #             return doc_scores
