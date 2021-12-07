@@ -13,6 +13,7 @@ from flask import request
 import pandas as pd
 import ast
 import json
+import numpy as np
 
 
 class BERTComponent:
@@ -170,7 +171,7 @@ class DocumentRanker:
     
     def __init__(self, documents):
         self.documents = documents
-        self.bert = BERTComponent('bert-large-cased')
+#         self.bert = BERTComponent('bert-large-cased')
         self.__model = SentenceTransformer('bert-large-cased')
     
     def __get_info_rep(self, document):
@@ -181,6 +182,34 @@ class DocumentRanker:
 #         text_word_embeddings, text_embedding = self.bert.get_bert_embeddings(text, spans)
 #         return text_embedding
         return self.__model.encode(text)
+    
+    def get_clustered_documents(self):
+        
+        clusters = {}
+        centroids = {}
+        clusterNumber = 1
+        clusters[clusterNumber] = [(self.documents[0]['id'],self.documents[0]['embedding'])]
+        centroids[clusterNumber] = self.documents[0]['embedding']
+        
+        for i in range(1, len(self.documents)):
+            document = self.documents[i]
+            inserted = False
+            for j in range(1, clusterNumber + 1):
+                centroid = centroids[clusterNumber]
+                score = cosine_similarity([centroid], [document['embedding']])[0][0]
+                #print("SCORE: ", score)
+                if score > 0.95:
+                    inserted = True
+                    clusters[j].append((document['id'], document['embedding']))
+                    centroids[j] = document['embedding']
+                    break
+            
+            if(not inserted):
+                clusterNumber += 1
+                clusters[clusterNumber] = [(document['id'],document['embedding'])]
+                centroids[clusterNumber] = document['embedding']
+        
+        return list(clusters.items())
     
     def get_related_documents(self, query):
         index = {}
@@ -201,6 +230,7 @@ class DocumentRanker:
             else:
                 #print("Computing new Embedding")
                 abstract_embedding = self.__get_embedding(abstract)
+                document['embedding'] = abstract_embedding
             #print("This is the embedding type: ", type(abstract_embedding))
             #print("This is the embedding: ", abstract_embedding)
             #index[last] = torch.dot(q_sent_embedding, abstract_embedding)
@@ -224,39 +254,60 @@ class DocumentRanker:
 #         else:
 #             return doc_scores[:number_of_documents]
         
+        
 
 class NLP(Resource):
     # def get(self):
     #     data = pd.read_csv('users.csv')  # read CSV
     #     data = data.to_dict()  # convert dataframe to dictionary
     #     return {'data': data}, 200  # return data and 200 OK code
-    
+
     def post(self):        
         #args = parser.parse_args()  # parse arguments to dictionary
         args = request.get_json()
         #args = request.args.get('query')
         print(args)
+        calculateClusters = args['calculateClusters']
         query=args['query']
         print(query)
 #         args['articles'] = args['articles'].replace("\'", "\"")
         print(args['articles'])
         documents = args['articles']
-        
+
         ranker = DocumentRanker(documents)
         results = ranker.get_related_documents(query)
-        
+
+        if(calculateClusters):
+            clusterResults = ranker.get_clustered_documents()
+
         response = []
-        
-        for result in results:
-            response.append({"id": result[0], "weight": result[1], "embedding": result[2]})
-        
+
+        if(calculateClusters):
+            for result in results:
+                clusterNumber = 0
+                for clusterResult in clusterResults:
+                    #print("CCLCLCLC:", clusterResult)
+                    #print("AAAAAA: ",clusterResult[1], result[0])
+                    #print("BBBBBB:", [x[1] for x in clusterResult])
+                    if(result[0] in [x[0] for x in clusterResult[1]]):
+                        clusterNumber = clusterResult[0]
+                        break
+
+                response.append({"id": result[0], "weight": result[1], "embedding": result[2], "clusterId": clusterNumber})
+
+        else:
+            for result in results:
+                response.append({"id": result[0], "weight": result[1], "embedding": result[2]})
+
         # result = pd.DataFrame({
         #     'userId': args['userId'],
         #     'name': args['name'],
         #     'city': args['city'],
         #     'locations': [[]]
         # })
-        
+
+        #print("RESPONSE: ", response)
+
         return response, 200  # return data with 200 OK
 
 
