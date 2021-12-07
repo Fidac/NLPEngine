@@ -198,7 +198,7 @@ class DocumentRanker:
                 centroid = centroids[clusterNumber]
                 score = cosine_similarity([centroid], [document['embedding']])[0][0]
                 #print("SCORE: ", score)
-                if score > 0.95:
+                if score > 0.9:
                     inserted = True
                     clusters[j].append((document['id'], document['embedding']))
                     centroids[j] = document['embedding']
