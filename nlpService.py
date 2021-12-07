@@ -166,8 +166,6 @@ class BERTComponent:
         sentence_embedding = torch.mean(torch.stack(token_vec_sums), dim=0)
         
         return bert_embeddings, sentence_embedding
-
-
 class DocumentRanker:
     
     def __init__(self, documents):
@@ -186,6 +184,7 @@ class DocumentRanker:
     
     def get_related_documents(self, query):
         index = {}
+        embeddings = {}
         last = 0
         related_documents = []
         
@@ -195,13 +194,22 @@ class DocumentRanker:
             abstract = document['title'] + " " + document['abstractText'] + ". "
 #             for keyword in document['authorKeywords']:
 #                 abstract += keyword['keyword']
-            abstract_embedding = self.__get_embedding(abstract)
+            if(document['embedding'] is not None and len(document['embedding']) > 0):
+                #print("USING SAVED EMBEEDING")
+                #abstract_embedding = torch.FloatTensor(document['embedding'])
+                abstract_embedding = np.asarray(document['embedding'], dtype=np.float32)
+            else:
+                #print("Computing new Embedding")
+                abstract_embedding = self.__get_embedding(abstract)
+            #print("This is the embedding type: ", type(abstract_embedding))
+            #print("This is the embedding: ", abstract_embedding)
             #index[last] = torch.dot(q_sent_embedding, abstract_embedding)
-            index[document['id']] = cosine_similarity([q_sent_embedding], [abstract_embedding])[0][0]
+            index[document['id']] = (cosine_similarity([q_sent_embedding], [abstract_embedding])[0][0], abstract_embedding.tolist())
+#             embeddings[document['id']] = abstract_embedding.toList()
 #             last += 1
         
         doc_scores = list(index.items())
-        doc_scores = [(x[0], x[1].tolist()) for x in doc_scores]
+        doc_scores = [(x[0], x[1][0].tolist(), x[1][1]) for x in doc_scores]
         doc_scores= sorted(doc_scores, key = lambda x: x[1], reverse=True)
         return doc_scores
         #print("Scores: ", scores)
@@ -216,8 +224,6 @@ class DocumentRanker:
 #         else:
 #             return doc_scores[:number_of_documents]
         
-
-# class ResponseDTO:
 
 class NLP(Resource):
     # def get(self):
@@ -242,7 +248,7 @@ class NLP(Resource):
         response = []
         
         for result in results:
-            response.append({"id": result[0], "weight": result[1]})
+            response.append({"id": result[0], "weight": result[1], "embedding": result[2]})
         
         # result = pd.DataFrame({
         #     'userId': args['userId'],
