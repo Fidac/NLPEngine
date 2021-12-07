@@ -266,12 +266,12 @@ class NLP(Resource):
         #args = parser.parse_args()  # parse arguments to dictionary
         args = request.get_json()
         #args = request.args.get('query')
-        print(args)
+        #print(args)
         calculateClusters = args['calculateClusters']
         query=args['query']
-        print(query)
+        #print(query)
 #         args['articles'] = args['articles'].replace("\'", "\"")
-        print(args['articles'])
+        #print(args['articles'])
         documents = args['articles']
 
         ranker = DocumentRanker(documents)
