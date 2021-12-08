@@ -172,7 +172,7 @@ class DocumentRanker:
     def __init__(self, documents):
         self.documents = documents
 #         self.bert = BERTComponent('bert-large-cased')
-        self.__model = SentenceTransformer('bert-large-cased')
+        self.__model = SentenceTransformer('bert-base-cased')
     
     def __get_info_rep(self, document):
         pass
