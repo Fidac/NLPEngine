@@ -167,12 +167,17 @@ class BERTComponent:
         sentence_embedding = torch.mean(torch.stack(token_vec_sums), dim=0)
         
         return bert_embeddings, sentence_embedding
+    
 class DocumentRanker:
     
-    def __init__(self, documents):
-        self.documents = documents
+    def __init__(self, model):
+        
 #         self.bert = BERTComponent('bert-large-cased')
-        self.__model = SentenceTransformer('bert-base-cased')
+        #self.__model = SentenceTransformer('bert-base-cased')
+        self.__model = model
+    
+    def setDocuments(self, documents):
+        self.documents = documents
     
     def __get_info_rep(self, document):
         pass
@@ -230,6 +235,7 @@ class DocumentRanker:
             else:
                 #print("Computing new Embedding")
                 abstract_embedding = self.__get_embedding(abstract)
+                #print("Embedding Shape: ", abstract_embedding.shape)
                 document['embedding'] = abstract_embedding
             #print("This is the embedding type: ", type(abstract_embedding))
             #print("This is the embedding: ", abstract_embedding)
@@ -254,13 +260,17 @@ class DocumentRanker:
 #         else:
 #             return doc_scores[:number_of_documents]
         
-        
+
+model = SentenceTransformer('bert-base-cased')        
 
 class NLP(Resource):
     # def get(self):
     #     data = pd.read_csv('users.csv')  # read CSV
     #     data = data.to_dict()  # convert dataframe to dictionary
     #     return {'data': data}, 200  # return data and 200 OK code
+    
+    def __init__(self):
+        self.ranker = DocumentRanker(model)
 
     def post(self):        
         #args = parser.parse_args()  # parse arguments to dictionary
